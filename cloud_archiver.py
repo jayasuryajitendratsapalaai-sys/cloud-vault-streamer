@@ -1013,9 +1013,17 @@ async def main():
                     raw_bytes = item["raw_bytes"]
                     duration = item["duration"]
 
+                    if calc_ep in uploaded_episodes:
+                        print(f"   ✓ Ep {calc_ep} already uploaded in Vault channel. Skipping.")
+                        continue
+
                     ep_uploaded = False
                     for ep_attempt in range(1, 6):
                         try:
+                            if not vault_client.is_connected():
+                                print("⚠️ Vault client disconnected. Reconnecting to Telegram...")
+                                await vault_client.connect()
+
                             # ==========================================
                             # 5-STAGE UNIVERSAL ZERO-FAILURE PIPELINE
                             # ==========================================
@@ -1056,6 +1064,9 @@ async def main():
                                     pass
 
                             # Stage 5: Telegram Native Streaming Upload
+                            if not vault_client.is_connected():
+                                await vault_client.connect()
+
                             input_file = await asyncio.wait_for(
                                 fast_upload_file(vault_client, upload_bytes, file_name=final_filename, workers=4),
                                 timeout=120.0
@@ -1092,6 +1103,11 @@ async def main():
                             await asyncio.sleep(fwe.seconds + 5)
                         except (Exception, asyncio.CancelledError, asyncio.TimeoutError) as ep_err:
                             print(f"⚠️ Upload attempt {ep_attempt}/5 for Ep {calc_ep} failed: {ep_err}")
+                            try:
+                                if not vault_client.is_connected():
+                                    await vault_client.connect()
+                            except Exception:
+                                pass
                             await asyncio.sleep(4.0 * ep_attempt)
 
                     if not ep_uploaded:
