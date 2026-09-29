@@ -1,4 +1,4 @@
-name: Stream Supreme Magus to Cloud Vault
+name: Stream SuperGene to Cloud Vault
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   stream_story:
-    name: Upload Supreme Magus Batches
+    name: Upload SuperGene Batches
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
@@ -41,4 +41,4 @@ jobs:
           TELEGRAM_STRING_SESSION_SUB: ${{ secrets.TELEGRAM_STRING_SESSION_SUB }}
           PYTHONUNBUFFERED: "1"
         run: |
-          python -u cloud_archiver.py --story "Supreme Magus (English)" --target_vault_id "-1004336676653" --max_batches 5
+          python -u cloud_archiver.py --story "SuperGene" --target_vault_id "-1004302666000" --max_batches 5

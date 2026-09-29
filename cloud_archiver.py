@@ -957,15 +957,27 @@ async def main():
                                     try:
                                         if not active_dl_client.is_connected():
                                             await active_dl_client.connect()
-                                        buf.seek(0)
-                                        buf.truncate(0)
                                         fresh_msg = await active_dl_client.get_messages(msg.peer_id, ids=msg.id)
                                         target_m = fresh_msg if (fresh_msg and fresh_msg.media) else msg
-                                        await asyncio.wait_for(
-                                            active_dl_client.download_media(target_m, file=buf),
-                                            timeout=180.0
-                                        )
-                                        if buf.getbuffer().nbytes > 0:
+                                        if hasattr(target_m.media, "document") and target_m.media.document:
+                                            doc = target_m.media.document
+                                            loc = InputDocumentFileLocation(
+                                                id=doc.id,
+                                                access_hash=doc.access_hash,
+                                                file_reference=doc.file_reference,
+                                                thumb_size=""
+                                            )
+                                            buf = await asyncio.wait_for(
+                                                fast_download_file(active_dl_client, loc, doc.size, workers=4),
+                                                timeout=90.0
+                                            )
+                                        else:
+                                            buf = io.BytesIO()
+                                            await asyncio.wait_for(
+                                                active_dl_client.download_media(target_m, file=buf),
+                                                timeout=90.0
+                                            )
+                                        if buf and buf.getbuffer().nbytes > 0:
                                             break
                                     except FloodWaitError as fwe:
                                         print(f"⏳ Telegram FloodWait during download of Ep {calc_ep}: Sleeping {fwe.seconds + 5}s...")
