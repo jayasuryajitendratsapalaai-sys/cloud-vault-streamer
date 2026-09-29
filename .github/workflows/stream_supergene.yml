@@ -11,7 +11,7 @@ jobs:
   stream_story:
     name: Upload SuperGene Batches
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 360
 
     steps:
       - name: Checkout Code
@@ -41,4 +41,4 @@ jobs:
           TELEGRAM_STRING_SESSION_SUB: ${{ secrets.TELEGRAM_STRING_SESSION_SUB }}
           PYTHONUNBUFFERED: "1"
         run: |
-          python -u cloud_archiver.py --story "SuperGene" --target_vault_id "-1004302666000" --max_batches 5
+          python -u cloud_archiver.py --story "SuperGene" --target_vault_id "-1004302666000" --max_batches 0 --allow_backfill_skip
