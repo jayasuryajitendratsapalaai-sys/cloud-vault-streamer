@@ -949,10 +949,18 @@ async def main():
                         final_filename = f"{display_title}.mp3"
 
                         raw_bytes = None
+                        # Build a list of download clients to rotate through on flood
+                        dl_clients = [download_client] if download_client else [harvester_client]
+                        if vault_client and vault_client not in dl_clients:
+                            dl_clients.append(vault_client)
+                        if harvester_client and harvester_client not in dl_clients:
+                            dl_clients.append(harvester_client)
+
                         for ep_attempt in range(1, 6):
                             try:
                                 buf = io.BytesIO()
-                                active_dl_client = download_client if download_client else (harvester_client if harvester_client and harvester_client.is_connected() else vault_client)
+                                # Rotate clients on retries to distribute flood pressure
+                                active_dl_client = dl_clients[(ep_attempt - 1) % len(dl_clients)]
                                 for dl_try in range(1, 6):
                                     try:
                                         if not active_dl_client.is_connected():
@@ -968,23 +976,37 @@ async def main():
                                                 thumb_size=""
                                             )
                                             buf = await asyncio.wait_for(
-                                                fast_download_file(active_dl_client, loc, doc.size, workers=4),
-                                                timeout=90.0
+                                                fast_download_file(active_dl_client, loc, doc.size, workers=2),
+                                                timeout=120.0
                                             )
                                         else:
                                             buf = io.BytesIO()
                                             await asyncio.wait_for(
                                                 active_dl_client.download_media(target_m, file=buf),
-                                                timeout=90.0
+                                                timeout=120.0
                                             )
                                         if buf and buf.getbuffer().nbytes > 0:
                                             break
                                     except FloodWaitError as fwe:
-                                        print(f"⏳ Telegram FloodWait during download of Ep {calc_ep}: Sleeping {fwe.seconds + 5}s...")
-                                        await asyncio.sleep(fwe.seconds + 5)
+                                        wait_secs = fwe.seconds + 5
+                                        print(f"⏳ FloodWait downloading Ep {calc_ep} (client {(ep_attempt-1)%len(dl_clients)+1}/{len(dl_clients)}): sleep {wait_secs}s...")
+                                        await asyncio.sleep(wait_secs)
+                                        # Rotate to next client on next inner retry
+                                        next_idx = (dl_clients.index(active_dl_client) + 1) % len(dl_clients)
+                                        active_dl_client = dl_clients[next_idx]
+                                        print(f"   🔄 Rotated to download client {next_idx + 1}/{len(dl_clients)}")
                                     except (Exception, asyncio.CancelledError, asyncio.TimeoutError) as dl_err:
-                                        print(f"   ⚠️ Download attempt {dl_try}/5 for Ep {calc_ep}: {dl_err}")
-                                        await asyncio.sleep(4.0 * dl_try)
+                                        err_str = str(dl_err)
+                                        if "FLOOD_PREMIUM_WAIT" in err_str or "FLOOD_WAIT" in err_str:
+                                            m_wait = re.search(r'FLOOD_(?:PREMIUM_)?WAIT_(\d+)', err_str)
+                                            wait_secs = int(m_wait.group(1)) + 5 if m_wait else 15
+                                            print(f"   ⏳ Premium FloodWait on Ep {calc_ep}: sleep {wait_secs}s, rotating client...")
+                                            await asyncio.sleep(wait_secs)
+                                            next_idx = (dl_clients.index(active_dl_client) + 1) % len(dl_clients)
+                                            active_dl_client = dl_clients[next_idx]
+                                        else:
+                                            print(f"   ⚠️ Download attempt {dl_try}/5 for Ep {calc_ep}: {dl_err}")
+                                            await asyncio.sleep(4.0 * dl_try)
 
                                 buf.seek(0)
                                 raw_bytes = buf.getvalue()

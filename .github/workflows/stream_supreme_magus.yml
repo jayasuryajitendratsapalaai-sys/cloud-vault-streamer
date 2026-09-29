@@ -11,7 +11,7 @@ jobs:
   stream_story:
     name: Upload Supreme Magus Batches
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 350
 
     steps:
       - name: Checkout Code
@@ -41,4 +41,4 @@ jobs:
           TELEGRAM_STRING_SESSION_SUB: ${{ secrets.TELEGRAM_STRING_SESSION_SUB }}
           PYTHONUNBUFFERED: "1"
         run: |
-          python -u cloud_archiver.py --story "Supreme Magus (English)" --target_vault_id "-1004336676653" --max_batches 5
+          python -u cloud_archiver.py --story "Supreme Magus (English)" --target_vault_id "-1004336676653" --max_batches 0 --allow_backfill_skip
