@@ -1,0 +1,44 @@
+name: Stream Supreme Magus to Cloud Vault
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: telegram-streamer-lock
+  cancel-in-progress: false
+
+jobs:
+  stream_story:
+    name: Upload Supreme Magus Batches
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install System Dependencies (FFmpeg)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+
+      - name: Install Python Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Stream Archiver
+        env:
+          API_ID: ${{ secrets.API_ID }}
+          API_HASH: ${{ secrets.API_HASH }}
+          TELEGRAM_STRING_SESSION_VAULT: ${{ secrets.TELEGRAM_STRING_SESSION_VAULT }}
+          TELEGRAM_STRING_SESSION_HARVESTER: ${{ secrets.TELEGRAM_STRING_SESSION_HARVESTER }}
+          TELEGRAM_STRING_SESSION_SUB: ${{ secrets.TELEGRAM_STRING_SESSION_SUB }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          python -u cloud_archiver.py --story "Supreme Magus (English)" --target_vault_id "-1004336676653" --max_batches 5 --allow_backfill_skip

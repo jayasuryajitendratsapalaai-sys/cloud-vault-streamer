@@ -1,0 +1,6 @@
+__pycache__/
+*.session
+*.pyc
+temp_transcode/
+*.tmp
+*.log
