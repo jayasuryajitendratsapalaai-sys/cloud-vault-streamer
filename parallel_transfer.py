@@ -8,7 +8,7 @@ from telethon.tl.types import InputFile, InputFileBig
 
 from telethon.errors import FloodWaitError, ServerError, RpcCallFailError
 
-async def fast_download_file(client, location, file_size, workers=4, part_size_kb=512, max_retries=2):
+async def fast_download_file(client, location, file_size, workers=2, part_size_kb=512, max_retries=6):
     part_size = part_size_kb * 1024
     part_count = (file_size + part_size - 1) // part_size
     buffer = bytearray(file_size)
@@ -27,7 +27,14 @@ async def fast_download_file(client, location, file_size, workers=4, part_size_k
                     return
             except FloodWaitError as fwe:
                 await asyncio.sleep(fwe.seconds + 2)
-            except (ServerError, RpcCallFailError, ConnectionError, asyncio.TimeoutError, Exception) as e:
+            except Exception as e:
+                err_str = str(e)
+                m_wait = re.search(r"FLOOD_(?:PREMIUM_)?WAIT_(\d+)", err_str)
+                if m_wait:
+                    wait_sec = int(m_wait.group(1)) + 2
+                    print(f"⏳ Telegram Flood/Premium wait ({wait_sec}s). Sleeping...")
+                    await asyncio.sleep(wait_sec)
+                    continue
                 if attempt == max_retries - 1:
                     raise e
                 sleep_time = min(10, (2 ** attempt) + 1)

@@ -914,7 +914,7 @@ async def main():
                 audio_messages = sorted(list(unique_tracks.values()), key=lambda m: m._calc_ep)
                 print(f"   Received {len(audio_messages)} tracks (Strictly sorted: {[m._calc_ep for m in audio_messages]}). Uploading to Vault...")
 
-                download_queue = asyncio.Queue(maxsize=3)
+                download_queue = asyncio.Queue(maxsize=1)
 
                 async def download_producer():
                     for a_idx, msg in enumerate(audio_messages):
