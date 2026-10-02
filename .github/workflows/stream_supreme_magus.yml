@@ -41,4 +41,4 @@ jobs:
           TELEGRAM_STRING_SESSION_SUB: ${{ secrets.TELEGRAM_STRING_SESSION_SUB }}
           PYTHONUNBUFFERED: "1"
         run: |
-          python -u cloud_archiver.py --story "Supreme Magus (English)" --target_vault_id "-1004336676653" --max_batches 0 --allow_backfill_skip
+          python -u cloud_archiver.py --story "Supreme Magus (English)" --target_vault_id "-1003982065941" --max_batches 0 --allow_backfill_skip
